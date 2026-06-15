@@ -1,0 +1,371 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row g-4 mb-4">
+    <!-- Stat 1: Total Websites -->
+    <div class="col-md-3">
+        <div class="glass-panel p-4 d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-secondary small d-block mb-1">MONITORED SITES</span>
+                <h3 class="fw-bold mb-0 text-white">{{ total_count }}</h3>
+            </div>
+            <div class="bg-dark rounded-3 p-3 border border-secondary border-opacity-25" style="font-size: 1.5rem; color: var(--accent-cyan);">
+                <i class="bi bi-globe"></i>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Stat 2: Safe Websites -->
+    <div class="col-md-3">
+        <div class="glass-panel p-4 d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-secondary small d-block mb-1">SAFE WEBSITES</span>
+                <h3 class="fw-bold mb-0 glow-green">{{ safe_count }}</h3>
+            </div>
+            <div class="bg-dark rounded-3 p-3 border border-success border-opacity-25" style="font-size: 1.5rem; color: var(--accent-green);">
+                <i class="bi bi-shield-check"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stat 3: Defaced Websites -->
+    <div class="col-md-3">
+        <div class="glass-panel p-4 d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-secondary small d-block mb-1">DEFACED ALERTS</span>
+                <h3 class="fw-bold mb-0 glow-red">{{ defaced_count }}</h3>
+            </div>
+            <div class="bg-dark rounded-3 p-3 border border-danger border-opacity-25" style="font-size: 1.5rem; color: var(--accent-red);">
+                <i class="bi bi-shield-slash"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stat 4: Inactive -->
+    <div class="col-md-3">
+        <div class="glass-panel p-4 d-flex align-items-center justify-content-between">
+            <div>
+                <span class="text-secondary small d-block mb-1">PAUSED MONITORING</span>
+                <h3 class="fw-bold mb-0 text-warning">{{ inactive_count }}</h3>
+            </div>
+            <div class="bg-dark rounded-3 p-3 border border-warning border-opacity-25" style="font-size: 1.5rem; color: #FFC107;">
+                <i class="bi bi-pause-circle"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Main websites list -->
+    <div class="col-lg-8 col-xl-9">
+        <div class="glass-panel p-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="fw-bold mb-0"><i class="bi bi-list-stars me-2 text-info"></i>Monitored Domains</h4>
+                <button class="btn btn-cyber-primary btn-sm" data-bs-toggle="modal" data-bs-target="#registerModal">
+                    <i class="bi bi-plus-circle me-1"></i>Add Website
+                </button>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-custom align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Website</th>
+                            <th>Target URL</th>
+                            <th>Status</th>
+                            <th>Last Monitored</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if not site_list_data %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5 text-secondary">
+                                <i class="bi bi-shield-exclamation d-block mb-2" style="font-size: 2rem;"></i>
+                                No websites registered yet. Click "Add Website" to start monitoring.
+                            </td>
+                        </tr>
+                        {% else %}
+                            {% for site in site_list_data %}
+                            <tr id="site-row-{{ site.id }}">
+                                <td>
+                                    <span class="fw-bold text-white">{{ site.name }}</span>
+                                </td>
+                                <td>
+                                    <a href="{{ site.url }}" target="_blank" class="text-info text-decoration-none small"><i class="bi bi-link-45deg"></i>{{ site.url }}</a>
+                                </td>
+                                <td>
+                                    {% if not site.is_active %}
+                                        <span class="badge bg-secondary badge-status"><i class="bi bi-dash-circle"></i> Paused</span>
+                                    {% elif site.status == 'safe' %}
+                                        <span class="badge bg-glow-green badge-status"><i class="bi bi-check-circle-fill"></i> Safe</span>
+                                    {% elif site.status == 'defaced' %}
+                                        <span class="badge bg-glow-red badge-status"><i class="bi bi-exclamation-triangle-fill"></i> DEFACED ({% if site.severity == 'Critical' %}<font color="red">CRIT</font>{% else %}{{ site.severity }}{% endif %})</span>
+                                    {% elif site.status == 'error' %}
+                                        <span class="badge bg-danger badge-status"><i class="bi bi-x-circle-fill"></i> Offline/Error</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark badge-status"><i class="bi bi-hourglass-split"></i> Pending Scan</span>
+                                    {% endif %}
+                                </td>
+                                <td class="small text-secondary">{{ site.scanned_at }}</td>
+                                <td class="text-end">
+                                    <div class="d-inline-flex gap-2">
+                                        <!-- Active toggle -->
+                                        <div class="form-check form-switch my-auto me-1">
+                                            <input class="form-check-input toggle-active-btn" type="checkbox" data-id="{{ site.id }}" {% if site.is_active %}checked{% endif %} title="Toggle monitoring active state">
+                                        </div>
+                                        
+                                        <!-- Manual trigger scan -->
+                                        <button class="btn btn-sm btn-cyber-secondary scan-btn" data-id="{{ site.id }}" {% if not site.is_active %}disabled{% endif %} title="Trigger Manual Security Scan">
+                                            <i class="bi bi-arrow-repeat"></i> Scan
+                                        </button>
+                                        
+                                        <!-- Details -->
+                                        <a class="btn btn-sm btn-cyber-secondary" href="{{ url_for('dashboard.website_detail', website_id=site.id) }}" title="Inspect Audit History & Diff">
+                                            <i class="bi bi-eye"></i> View
+                                        </a>
+                                        
+                                        <!-- Delete -->
+                                        <button class="btn btn-sm btn-outline-danger delete-btn" data-id="{{ site.id }}" data-name="{{ site.name }}" title="Delete monitored site">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Analytics Column -->
+    <div class="col-lg-4 col-xl-3">
+        <div class="glass-panel p-4 h-100">
+            <h4 class="fw-bold mb-4"><i class="bi bi-pie-chart me-2 text-info"></i>Alert Severities</h4>
+            <div class="chart-container mb-4" style="position: relative; height: 180px;">
+                <canvas id="severityChart"></canvas>
+            </div>
+            
+            <hr class="border-secondary border-opacity-25 my-4">
+            
+            <h5 class="fw-bold mb-3 small text-secondary">ACTIVE SCAN LOG</h5>
+            <div class="small-logs" style="max-height: 200px; overflow-y: auto;">
+                {% if not system_logs %}
+                    <p class="text-secondary small mb-0">No scans run during this system instance cycle.</p>
+                {% else %}
+                    {% for log in system_logs %}
+                    <div class="mb-2 pb-2 border-bottom border-secondary border-opacity-10">
+                        <div class="d-flex justify-content-between small text-secondary mb-1">
+                            <span>{{ log.category }}</span>
+                            <span>{{ log.created_at.strftime('%H:%M:%S') }}</span>
+                        </div>
+                        <p class="mb-0 text-white font-monospace" style="font-size: 0.75rem;">{{ log.message | truncate(80) }}</p>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Register Website -->
+<div class="modal fade" id="registerModal" tabindex="-1" aria-labelledby="registerModalLabel" aria-hidden="True">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-panel border border-secondary text-white" style="background-color: #0F1626;">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title fw-bold" id="registerModalLabel"><i class="bi bi-shield-plus me-2 text-info"></i>Register Domain for Monitoring</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modalError" class="alert alert-danger d-none glass-panel border-0 mb-3" style="background: rgba(255,0,0,0.1);"></div>
+                
+                <form id="registerForm">
+                    <div class="mb-3">
+                        <label for="siteName" class="form-label small text-secondary">Website Friendly Name</label>
+                        <input type="text" class="form-control bg-transparent border-secondary text-white" id="siteName" required placeholder="My Corporate Portal">
+                    </div>
+                    <div class="mb-3">
+                        <label for="siteUrl" class="form-label small text-secondary">Target Website URL</label>
+                        <input type="url" class="form-control bg-transparent border-secondary text-white" id="siteUrl" required placeholder="https://example.com">
+                        <div class="form-text text-secondary" style="font-size: 0.75rem;">The system will scrape this URL immediately to establish the baseline integrity signature.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="checkInterval" class="form-label small text-secondary">Scanning Cycle Interval (Minutes)</label>
+                        <select class="form-select bg-transparent border-secondary text-white" id="checkInterval">
+                            <option value="1" style="background-color: #0F1626;">1 Minute (High Security)</option>
+                            <option value="5" style="background-color: #0F1626;" selected>5 Minutes (Standard)</option>
+                            <option value="15" style="background-color: #0F1626;">15 Minutes</option>
+                            <option value="60" style="background-color: #0F1626;">1 Hour</option>
+                        </select>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top border-secondary">
+                        <button type="button" class="btn btn-cyber-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-cyber-primary" id="submitRegisterBtn">
+                            <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true" id="registerSpinner"></span>
+                            Establish Baseline & Register
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart JS CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    $(document).ready(function() {
+        // Render Severity Distribution Chart
+        const ctx = document.getElementById('severityChart').getContext('2d');
+        const chartData = {{ severity_chart_data | tojson }};
+        
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Low', 'Medium', 'High', 'Critical'],
+                datasets: [{
+                    data: chartData,
+                    backgroundColor: [
+                        '#6B7280', // Low - Gray
+                        '#F59E0B', // Medium - Amber
+                        '#EF4444', // High - Red
+                        '#8B5CF6'  // Critical - Purple
+                    ],
+                    borderColor: '#0B0F19',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: '#9CA3AF',
+                            boxWidth: 12,
+                            font: { family: 'Outfit', size: 10 }
+                        }
+                    }
+                },
+                cutout: '70%'
+            }
+        });
+
+        // AJAX: Register Website Form Submission
+        $('#registerForm').on('submit', function(e) {
+            e.preventDefault();
+            
+            // Show loaders
+            $('#modalError').addClass('d-none');
+            $('#registerSpinner').removeClass('d-none');
+            $('#submitRegisterBtn').prop('disabled', true);
+            
+            const payload = {
+                name: $('#siteName').val(),
+                url: $('#siteUrl').val(),
+                check_interval_mins: $('#checkInterval').val()
+            };
+            
+            $.ajax({
+                url: '/api/websites',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(payload),
+                success: function(response) {
+                    $('#registerSpinner').addClass('d-none');
+                    $('#registerModal').modal('hide');
+                    location.reload();
+                },
+                error: function(xhr) {
+                    $('#registerSpinner').addClass('d-none');
+                    $('#submitRegisterBtn').prop('disabled', false);
+                    const errMsg = xhr.responseJSON ? xhr.responseJSON.error : 'Failed to register website.';
+                    $('#modalError').text(errMsg).removeClass('d-none');
+                }
+            });
+        });
+
+        // AJAX: Manual Scan Trigger
+        $('.scan-btn').on('click', function() {
+            const btn = $(this);
+            const siteId = btn.data('id');
+            
+            // Disable button and spin icon
+            btn.prop('disabled', true);
+            const originalHtml = btn.html();
+            btn.html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Scanning...');
+            
+            $.ajax({
+                url: `/api/websites/${siteId}/scan`,
+                type: 'POST',
+                success: function(response) {
+                    btn.html(originalHtml);
+                    btn.prop('disabled', false);
+                    location.reload();
+                },
+                error: function(xhr) {
+                    btn.html(originalHtml);
+                    btn.prop('disabled', false);
+                    alert(xhr.responseJSON ? xhr.responseJSON.error : 'Manual scan request failed.');
+                }
+            });
+        });
+
+        // AJAX: Toggle Active switch
+        $('.toggle-active-btn').on('change', function() {
+            const checkbox = $(this);
+            const siteId = checkbox.data('id');
+            const rowScanBtn = $(`#site-row-${siteId} .scan-btn`);
+            
+            $.ajax({
+                url: `/api/websites/${siteId}/toggle`,
+                type: 'POST',
+                success: function(response) {
+                    rowScanBtn.prop('disabled', !response.is_active);
+                    if (!response.is_active) {
+                        // If paused, refresh badge status on row
+                        $(`#site-row-${siteId} .badge-status`).replaceWith(
+                            '<span class="badge bg-secondary badge-status"><i class="bi bi-dash-circle"></i> Paused</span>'
+                        );
+                    } else {
+                        location.reload();
+                    }
+                },
+                error: function(xhr) {
+                    checkbox.prop('checked', !checkbox.is(':checked')); // Revert switch
+                    alert('Failed to update status.');
+                }
+            });
+        });
+
+        // AJAX: Delete website click
+        $('.delete-btn').on('click', function() {
+            const btn = $(this);
+            const siteId = btn.data('id');
+            const siteName = btn.data('name');
+            
+            if (confirm(`Are you absolutely sure you want to stop monitoring and delete "${siteName}"? All scan archives will be permanently lost.`)) {
+                $.ajax({
+                    url: `/api/websites/${siteId}`,
+                    type: 'DELETE',
+                    success: function(response) {
+                        $(`#site-row-${siteId}`).fadeOut(300, function() { $(this).remove(); });
+                    },
+                    error: function(xhr) {
+                        alert('Deletion failed.');
+                    }
+                });
+            }
+        });
+    });
+</script>
+{% endblock %}

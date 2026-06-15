@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+
+{% block title %}{{ website.name }} - Details{% endblock %}
+
+{% block extra_css %}
+<style>
+    .diff-container {
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 0.85rem;
+        background: #0D1117;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 15px;
+        max-height: 500px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+    }
+    
+    .diff-line {
+        display: block;
+        padding: 2px 8px;
+        border-radius: 3px;
+        line-height: 1.4;
+    }
+    
+    .diff-added {
+        background-color: rgba(46, 160, 67, 0.15);
+        color: #3fb950;
+        border-left: 3px solid #2ea043;
+    }
+    
+    .diff-removed {
+        background-color: rgba(248, 81, 73, 0.15);
+        color: #f85149;
+        border-left: 3px solid #f85149;
+    }
+    
+    .diff-header {
+        background-color: rgba(56, 139, 253, 0.1);
+        color: #58a6ff;
+        border-left: 3px solid #1f6feb;
+    }
+    
+    .screenshot-frame {
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        overflow: hidden;
+        background: #111827;
+        text-align: center;
+        padding: 10px;
+    }
+    
+    .screenshot-frame img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 4px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <a href="{{ url_for('dashboard.home') }}" class="btn btn-cyber-secondary btn-sm mb-2"><i class="bi bi-chevron-left"></i> Back to Dashboard</a>
+        <h2 class="fw-bold mb-0 text-white">{{ website.name }}</h2>
+        <span class="text-secondary small font-monospace">{{ website.url }}</span>
+    </div>
+    
+    <div class="d-flex gap-2">
+        {% if latest_scan %}
+            <a href="{{ url_for('dashboard.download_pdf', result_id=latest_scan.id) }}" class="btn btn-cyber-secondary">
+                <i class="bi bi-file-pdf text-danger"></i> Export PDF Report
+            </a>
+        {% endif %}
+        {% if current_role == 'admin' and latest_scan and latest_scan.status == 'defaced' %}
+            <button class="btn btn-cyber-primary" id="approveBaselineBtn">
+                <i class="bi bi-check-all"></i> Approve as New Baseline
+            </button>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Left panel: Baseline and Current Stats -->
+    <div class="col-lg-4">
+        <!-- Card 1: Configuration details -->
+        <div class="glass-panel p-4 mb-4">
+            <h5 class="fw-bold text-info mb-3"><i class="bi bi-gear-fill me-2"></i>Baseline Config</h5>
+            
+            <div class="mb-3">
+                <span class="text-secondary small d-block">ACTIVE BASELINE HASH (SHA-256)</span>
+                <span class="font-monospace text-white small break-word">{{ baseline.html_hash if baseline else 'N/A' }}</span>
+            </div>
+            
+            <div class="mb-3">
+                <span class="text-secondary small d-block">ESTABLISHED ON</span>
+                <span class="text-white small">{{ baseline.updated_at.strftime('%Y-%m-%d %H:%M:%S UTC') if baseline else 'N/A' }}</span>
+            </div>
+
+            <div class="mb-3">
+                <span class="text-secondary small d-block">MONITORING TIMING</span>
+                <span class="text-white small">Scheduled checks run every {{ website.check_interval_mins }} minutes.</span>
+            </div>
+            
+            <div>
+                <span class="text-secondary small d-block">STATUS</span>
+                {% if not website.is_active %}
+                    <span class="badge bg-secondary badge-status"><i class="bi bi-dash-circle"></i> Monitoring Disabled</span>
+                {% elif latest_scan and latest_scan.status == 'safe' %}
+                    <span class="badge bg-glow-green badge-status"><i class="bi bi-check-circle-fill"></i> Monitoring Active (Safe)</span>
+                {% elif latest_scan and latest_scan.status == 'defaced' %}
+                    <span class="badge bg-glow-red badge-status"><i class="bi bi-exclamation-triangle-fill"></i> DEFACED ALERT</span>
+                {% else %}
+                    <span class="badge bg-warning text-dark badge-status"><i class="bi bi-clock"></i> Pending Scan</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Card 2: Latest Scan Details -->
+        <div class="glass-panel p-4">
+            <h5 class="fw-bold text-info mb-3"><i class="bi bi-activity me-2"></i>Latest Scan Summary</h5>
+            {% if latest_scan %}
+                <div class="mb-3">
+                    <span class="text-secondary small d-block">LAST SCANNED</span>
+                    <span class="text-white small">{{ latest_scan.scanned_at.strftime('%Y-%m-%d %H:%M:%S UTC') }}</span>
+                </div>
+                <div class="mb-3">
+                    <span class="text-secondary small d-block">SCAN STATUS</span>
+                    {% if latest_scan.status == 'safe' %}
+                        <span class="text-success"><i class="bi bi-check-circle-fill"></i> Page Integrity Intact</span>
+                    {% elif latest_scan.status == 'defaced' %}
+                        <span class="text-danger fw-bold"><i class="bi bi-exclamation-octagon-fill"></i> Integrity Breach Detected</span>
+                    {% else %}
+                        <span class="text-warning"><i class="bi bi-exclamation-triangle-fill"></i> HTTP Connection Error</span>
+                    {% endif %}
+                </div>
+                {% if latest_scan.status == 'defaced' %}
+                    <div class="mb-3">
+                        <span class="text-secondary small d-block">SEVERITY LEVEL</span>
+                        <span class="badge bg-glow-red fw-bold font-monospace">{{ latest_scan.severity }}</span>
+                    </div>
+                {% endif %}
+                <div class="mb-0">
+                    <span class="text-secondary small d-block">CONNECTION DURATION</span>
+                    <span class="text-white small">{{ latest_scan.duration_ms }} ms</span>
+                </div>
+            {% else %}
+                <p class="text-secondary small mb-0">No scanning operations have run for this domain.</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Right Panel: Diff and Screenshot comparisons -->
+    <div class="col-lg-8">
+        <div class="glass-panel p-4 h-100">
+            <h4 class="fw-bold mb-4"><i class="bi bi-patch-check-fill text-info me-2"></i>Integrity Analysis</h4>
+            
+            {% if not latest_scan %}
+                <div class="text-center py-5 text-secondary">
+                    <i class="bi bi-hourglass-split d-block mb-2" style="font-size: 2.5rem;"></i>
+                    No scans available to display. Run a manual scan to inspect changes.
+                </div>
+            {% elif latest_scan.status == 'safe' %}
+                <div class="alert bg-glow-green mb-4 border-0 text-center glass-panel p-4">
+                    <i class="bi bi-shield-check glow-green d-block mb-2" style="font-size: 3rem;"></i>
+                    <h5 class="fw-bold">No Integrity Modifications Detected</h5>
+                    <p class="small mb-0 text-secondary">The live site matches the established database baseline (Hash: {{ latest_scan.html_hash }}).</p>
+                </div>
+            {% elif latest_scan.status == 'error' %}
+                <div class="alert bg-glow-red mb-4 border-0 text-center glass-panel p-4">
+                    <i class="bi bi-x-octagon glow-red d-block mb-2" style="font-size: 3rem;"></i>
+                    <h5 class="fw-bold">Connection or Fetching Failure</h5>
+                    <p class="small text-secondary mb-0">The monitoring engine failed to retrieve the page body during the last scan. Description:</p>
+                    <p class="font-monospace small text-white bg-dark p-2 mt-2 rounded border border-secondary border-opacity-25">{{ latest_scan.diff_report }}</p>
+                </div>
+            {% else %}
+                <!-- Defacement Detected: Show Diffs and Screenshots -->
+                <ul class="nav nav-tabs border-secondary mb-4" id="analysisTab" role="tablist">
+                    <li class="nav-item">
+                        <button class="nav-link nav-link-custom active" id="diff-tab" data-bs-toggle="tab" data-bs-target="#diffView" type="button"><i class="bi bi-code-slash me-1"></i> HTML Code Diff</button>
+                    </li>
+                    {% if baseline.screenshot_path or latest_scan.screenshot_path %}
+                    <li class="nav-item">
+                        <button class="nav-link nav-link-custom" id="screenshot-tab" data-bs-toggle="tab" data-bs-target="#screenshotView" type="button"><i class="bi bi-images me-1"></i> Screenshot Visualizer</button>
+                    </li>
+                    {% endif %}
+                </ul>
+                
+                <div class="tab-content" id="analysisTabContent">
+                    <!-- Code Diff View Tab -->
+                    <div class="tab-pane fade show active" id="diffView" role="tabpanel">
+                        <h6 class="text-secondary small mb-3">INTEGRITY BREACH DELTAS (RED: BASELINE, GREEN: DETECTED CHANGE):</h6>
+                        <div class="diff-container" id="diffReportContent">{{ latest_scan.diff_report }}</div>
+                    </div>
+                    
+                    <!-- Screenshots View Tab -->
+                    <div class="tab-pane fade" id="screenshotView" role="tabpanel">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="screenshot-frame h-100">
+                                    <div class="text-secondary small mb-2"><i class="bi bi-shield-check"></i> Baseline Screenshot</div>
+                                    {% if baseline.screenshot_path %}
+                                        <img src="{{ baseline.screenshot_path }}" alt="Baseline Screenshot" class="img-fluid border border-secondary border-opacity-25">
+                                    {% else %}
+                                        <div class="py-5 text-secondary small">No baseline screenshot available.</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="screenshot-frame h-100">
+                                    <div class="text-danger small mb-2"><i class="bi bi-shield-exclamation"></i> Defaced Scan Screenshot</div>
+                                    {% if latest_scan.screenshot_path %}
+                                        <img src="{{ latest_scan.screenshot_path }}" alt="Defaced Screenshot" class="img-fluid border border-secondary border-opacity-25">
+                                    {% else %}
+                                        <div class="py-5 text-secondary small">No defaced screenshot captured. Headless browser was offline.</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Bottom Section: Detailed Chronological Scan History Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="glass-panel p-4">
+            <h4 class="fw-bold mb-4"><i class="bi bi-clock-history text-info me-2"></i>Monitored Scan Archive (Past 15 cycles)</h4>
+            
+            <div class="table-responsive">
+                <table class="table table-custom align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Scan Time</th>
+                            <th>Status Badge</th>
+                            <th>Response Speed</th>
+                            <th>Change Severity</th>
+                            <th class="text-end">Report Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if not scan_history %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-secondary">No historical scan entries recorded.</td>
+                            </tr>
+                        {% else %}
+                            {% for history in scan_history %}
+                            <tr>
+                                <td class="fw-semibold">{{ history.scanned_at.strftime('%Y-%m-%d %H:%M:%S UTC') }}</td>
+                                <td>
+                                    {% if history.status == 'safe' %}
+                                        <span class="badge bg-glow-green badge-status"><i class="bi bi-check-circle-fill"></i> Safe</span>
+                                    {% elif history.status == 'defaced' %}
+                                        <span class="badge bg-glow-red badge-status"><i class="bi bi-exclamation-triangle-fill"></i> DEFACED</span>
+                                    {% else %}
+                                        <span class="badge bg-danger badge-status"><i class="bi bi-x-circle-fill"></i> Failed</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ history.duration_ms }} ms</td>
+                                <td>
+                                    {% if history.severity %}
+                                        <span class="badge {% if history.severity == 'Critical' or history.severity == 'High' %}bg-danger{% else %}bg-secondary{% endif %} font-monospace">{{ history.severity }}</span>
+                                    {% else %}
+                                        <span class="text-secondary">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <a href="{{ url_for('dashboard.download_pdf', result_id=history.id) }}" class="btn btn-sm btn-cyber-secondary">
+                                        <i class="bi bi-file-earmark-pdf text-danger"></i> PDF
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Parse raw unified diff report and colorize lines
+        const diffBlock = $('#diffReportContent');
+        if (diffBlock.length > 0) {
+            const rawDiff = diffBlock.text();
+            if (rawDiff && rawDiff !== "No changes detected" && rawDiff !== "Missing content for comparison") {
+                const lines = rawDiff.split('\n');
+                let formattedHtml = '';
+                
+                lines.forEach(function(line) {
+                    let cssClass = '';
+                    if (line.startsWith('+') && !line.startsWith('+++')) {
+                        cssClass = 'diff-added';
+                    } else if (line.startsWith('-') && !line.startsWith('---')) {
+                        cssClass = 'diff-removed';
+                    } else if (line.startsWith('@@') || line.startsWith('---') || line.startsWith('+++')) {
+                        cssClass = 'diff-header';
+                    }
+                    
+                    // Escape HTML tags to prevent execution in diff block
+                    const escapedLine = line
+                        .replace(/&/g, "&amp;")
+                        .replace(/</g, "&lt;")
+                        .replace(/>/g, "&gt;")
+                        .replace(/"/g, "&quot;")
+                        .replace(/'/g, "&#039;");
+                        
+                    formattedHtml += `<span class="diff-line ${cssClass}">${escapedLine}</span>`;
+                });
+                
+                diffBlock.html(formattedHtml);
+            }
+        }
+
+        // AJAX: Baseline Approval Click
+        $('#approveBaselineBtn').on('click', function() {
+            if (confirm("Are you sure you want to approve this scan as the new baseline? This will mark all pending alerts as resolved and establish this page HTML as the authorized version.")) {
+                const btn = $(this);
+                btn.prop('disabled', true);
+                
+                $.ajax({
+                    url: '/api/websites/{{ website.id }}/baseline',
+                    type: 'POST',
+                    success: function(response) {
+                        alert(response.message);
+                        location.reload();
+                    },
+                    error: function(xhr) {
+                        btn.prop('disabled', false);
+                        alert(xhr.responseJSON ? xhr.responseJSON.error : 'Failed to update baseline.');
+                    }
+                });
+            }
+        });
+    });
+</script>
+{% endblock %}

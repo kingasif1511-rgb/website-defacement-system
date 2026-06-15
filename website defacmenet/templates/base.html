@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Enterprise Website Defacement Monitoring and Cybersecurity Guard System">
+    <title>{% block title %}Defacement Monitor{% endblock %} - Sentinel Guard</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Google Fonts: Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    
+    <!-- Premium Dark Glassmorphism Styling -->
+    <style>
+        :root {
+            --bg-color: #080C14;
+            --panel-bg: rgba(13, 20, 35, 0.65);
+            --border-color: rgba(255, 255, 255, 0.06);
+            --text-primary: #F3F4F6;
+            --text-secondary: #9CA3AF;
+            --accent-green: #00FF87;
+            --accent-red: #FF3B30;
+            --accent-cyan: #00E5FF;
+            --accent-purple: #8B5CF6;
+            --shadow-glow: 0 0 15px rgba(139, 92, 246, 0.15);
+            --font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: var(--font-family);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* Glassmorphism panels */
+        .glass-panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .glass-panel:hover {
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        /* Glowing accents */
+        .glow-green { text-shadow: 0 0 8px rgba(0, 255, 135, 0.4); color: var(--accent-green); }
+        .glow-red { text-shadow: 0 0 8px rgba(255, 59, 48, 0.4); color: var(--accent-red); }
+        .glow-cyan { text-shadow: 0 0 8px rgba(0, 229, 255, 0.4); color: var(--accent-cyan); }
+        
+        .bg-glow-green { background-color: rgba(0, 255, 135, 0.1); border: 1px solid var(--accent-green); color: var(--accent-green); }
+        .bg-glow-red { background-color: rgba(255, 59, 48, 0.1); border: 1px solid var(--accent-red); color: var(--accent-red); }
+
+        /* Navigation styling */
+        .navbar-custom {
+            background: rgba(8, 12, 20, 0.85);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .navbar-brand-custom {
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .navbar-brand-custom i {
+            color: var(--accent-cyan);
+            filter: drop-shadow(0 0 5px rgba(0, 229, 255, 0.5));
+        }
+
+        .nav-link-custom {
+            color: var(--text-secondary);
+            font-weight: 500;
+            transition: color 0.2s, text-shadow 0.2s;
+            margin: 0 10px;
+        }
+
+        .nav-link-custom:hover, .nav-link-custom.active {
+            color: var(--text-primary);
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+        }
+
+        /* Sidebar structure */
+        .sidebar {
+            width: 260px;
+            border-right: 1px solid var(--border-color);
+            background: rgba(10, 16, 28, 0.5);
+            height: calc(100vh - 57px);
+            position: fixed;
+            top: 57px;
+            left: 0;
+            padding: 20px;
+            z-index: 1000;
+        }
+
+        .main-content {
+            margin-left: 260px;
+            padding: 30px;
+            flex-grow: 1;
+            margin-top: 57px;
+        }
+
+        @media (max-width: 992px) {
+            .sidebar {
+                display: none;
+            }
+            .main-content {
+                margin-left: 0;
+            }
+        }
+
+        .sidebar-nav-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            padding: 12px 16px;
+            border-radius: 8px;
+            transition: all 0.2s;
+            margin-bottom: 8px;
+        }
+
+        .sidebar-nav-link:hover, .sidebar-nav-link.active {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+            box-shadow: inset 3px 0 0 var(--accent-cyan);
+        }
+
+        /* Table styles */
+        .table-custom {
+            color: var(--text-primary);
+        }
+        
+        .table-custom tr {
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .table-custom th {
+            color: var(--text-secondary);
+            font-weight: 600;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        /* Buttons custom */
+        .btn-cyber-primary {
+            background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-purple) 100%);
+            border: none;
+            color: #000;
+            font-weight: 600;
+            box-shadow: var(--shadow-glow);
+            transition: all 0.2s;
+        }
+
+        .btn-cyber-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
+            color: #000;
+        }
+
+        .btn-cyber-secondary {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            transition: all 0.2s;
+        }
+
+        .btn-cyber-secondary:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.2);
+            color: var(--text-primary);
+        }
+
+        /* Badge status */
+        .badge-status {
+            padding: 6px 12px;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-color);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    
+    <!-- CSRF Meta Tag for AJAX -->
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
+    <!-- Top Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom fixed-top">
+        <div class="container-fluid">
+            <a class="navbar-brand navbar-brand-custom" href="/">
+                <i class="bi bi-shield-lock-fill"></i>
+                <span>SENTINEL GUARD</span>
+            </a>
+            
+            {% if current_user_id %}
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarContent">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item">
+                        <span class="text-secondary me-3"><i class="bi bi-person-circle me-1"></i>{{ current_username }} <span class="badge bg-secondary font-monospace">{{ current_role }}</span></span>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-sm btn-outline-danger" href="{{ url_for('auth.logout') }}"><i class="bi bi-box-arrow-right me-1"></i>Logout</a>
+                    </li>
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+    </nav>
+
+    <!-- App Shell Container -->
+    {% if current_user_id %}
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <nav class="d-flex flex-column h-100">
+                <a href="{{ url_for('dashboard.home') }}" class="sidebar-nav-link {% if request.path == '/dashboard' or request.path == '/' %}active{% endif %}">
+                    <i class="bi bi-speedometer2"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{{ url_for('dashboard.alerts_log') }}" class="sidebar-nav-link {% if request.path == '/alerts' %}active{% endif %}">
+                    <i class="bi bi-bell"></i>
+                    <span>Alerts & Logs</span>
+                </a>
+                <div class="mt-auto">
+                    <div class="glass-panel p-3 text-center border-0" style="background: rgba(255, 255, 255, 0.02)">
+                        <small class="text-secondary d-block">System Status</small>
+                        <span class="badge bg-glow-green badge-status mt-2"><i class="bi bi-cpu"></i> Online</span>
+                    </div>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content View Area -->
+        <main class="main-content">
+            <div class="container-fluid">
+                <!-- Flash Notification Banner -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show glass-panel border-0 mb-4" role="alert" style="background: rgba(255,255,255,0.05);">
+                                <div class="d-flex align-items-center gap-2">
+                                    {% if category == 'success' %}
+                                        <i class="bi bi-check-circle-fill glow-green"></i>
+                                    {% elif category == 'danger' or category == 'error' %}
+                                        <i class="bi bi-exclamation-triangle-fill glow-red"></i>
+                                    {% else %}
+                                        <i class="bi bi-info-circle-fill text-info"></i>
+                                    {% endif %}
+                                    <span>{{ message }}</span>
+                                </div>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    {% else %}
+        <!-- Full Screen Layout for Auth Pages -->
+        <main class="flex-grow-1 d-flex align-items-center justify-content-center py-5">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-md-6 col-lg-5">
+                        <!-- Flash Notification Banner -->
+                        {% with messages = get_flashed_messages(with_categories=true) %}
+                            {% if messages %}
+                                {% for category, message in messages %}
+                                    <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show mb-4 text-center" role="alert">
+                                        {{ message }}
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        {% endwith %}
+                        
+                        {% block auth_content %}{% endblock %}
+                    </div>
+                </div>
+            </div>
+        </main>
+    {% endif %}
+
+    <!-- Bootstrap 5 Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery for clean AJAX requests -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <script>
+        // Set up jQuery AJAX headers to send CSRF Token automatically
+        $.ajaxSetup({
+            beforeSend: function(xhr, settings) {
+                if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) && !this.crossDomain) {
+                    xhr.setRequestHeader("X-CSRFToken", $('meta[name="csrf-token"]').attr('content'));
+                }
+            }
+        });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

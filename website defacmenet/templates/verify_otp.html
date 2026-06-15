@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Verify OTP{% endblock %}
+
+{% block auth_content %}
+<div class="glass-panel p-5 text-center">
+    <div class="mb-4">
+        <div class="d-inline-flex align-items-center justify-content-center bg-glow-green rounded-circle p-3 mb-3" style="width: 70px; height: 70px; font-size: 1.8rem; border-color: var(--accent-purple);">
+            <i class="bi bi-shield-check glow-cyan text-info" style="color: var(--accent-purple) !important; filter: drop-shadow(0 0 5px rgba(139, 92, 246, 0.5));"></i>
+        </div>
+        <h2 class="fw-bold">Security Verification</h2>
+        <p class="text-secondary small">A one-time verification code was sent to <span class="text-white fw-semibold">{{ email }}</span>.</p>
+    </div>
+    
+    <form action="{{ url_for('auth.verify_otp') }}" method="POST" class="text-start">
+        <!-- CSRF Protection Token -->
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <!-- Hidden input for Email -->
+        <input type="hidden" name="email" value="{{ email }}">
+        
+        <div class="mb-4">
+            <label for="otp" class="form-label text-secondary small d-block text-center mb-3">ENTER 6-DIGIT VERIFICATION CODE</label>
+            <div class="input-group justify-content-center">
+                <span class="input-group-text bg-transparent border-secondary text-secondary"><i class="bi bi-shield-lock"></i></span>
+                <input type="text" class="form-control bg-transparent border-secondary text-white text-center fw-bold fs-4 letter-spacing-lg" 
+                       id="otp" name="otp" required maxlength="6" pattern="\d{6}" placeholder="123456" autocomplete="one-time-code" style="max-width: 200px; letter-spacing: 0.2em;">
+            </div>
+            <div class="form-text text-secondary text-center mt-2" style="font-size: 0.75rem;">This code is valid for 10 minutes.</div>
+        </div>
+        
+        <div class="d-grid mb-3">
+            <button type="submit" class="btn btn-cyber-primary py-2.5">
+                <i class="bi bi-patch-check me-2"></i>Verify & Activate
+            </button>
+        </div>
+    </form>
+    
+    <div class="mt-4 pt-3 border-top border-secondary border-opacity-25">
+        <p class="text-secondary small mb-0">Didn't receive the email? <a href="{{ url_for('auth.resend_otp', email=email) }}" class="text-info text-decoration-none fw-semibold"><i class="bi bi-send-fill" style="font-size: 0.75rem;"></i> Resend Code</a></p>
+    </div>
+</div>
+{% endblock %}

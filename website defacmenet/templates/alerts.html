@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}Alerts & Logs{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-0 text-white">Alerts & System Logs</h2>
+        <p class="text-secondary small">Review security incidents and audit system operations.</p>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Incidents Table Card -->
+    <div class="col-xl-8">
+        <div class="glass-panel p-4 h-100">
+            <h4 class="fw-bold mb-4 text-white"><i class="bi bi-shield-exclamation text-danger me-2"></i>Security Incidents Log</h4>
+            
+            <div class="table-responsive">
+                <table class="table table-custom align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Website</th>
+                            <th>Alert Title</th>
+                            <th>Severity</th>
+                            <th>Notifications</th>
+                            <th>Logged At</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if not alerts %}
+                            <tr>
+                                <td colspan="5" class="text-center py-5 text-secondary">
+                                    <i class="bi bi-shield-check d-block mb-2 text-success" style="font-size: 2.5rem;"></i>
+                                    No security incidents recorded. System report status is nominal.
+                                </td>
+                            </tr>
+                        {% else %}
+                            {% for alert in alerts %}
+                            <tr>
+                                <td class="fw-bold">{{ alert.website.name }}</td>
+                                <td>
+                                    <span class="text-white small d-block">{{ alert.title }}</span>
+                                    <small class="text-secondary font-monospace" style="font-size: 0.75rem;">{{ alert.message | truncate(80) }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge {% if alert.severity == 'Critical' or alert.severity == 'High' %}bg-danger{% else %}bg-warning text-dark{% endif %} font-monospace">{{ alert.severity }}</span>
+                                </td>
+                                <td>
+                                    <div class="d-flex gap-2">
+                                        <span class="badge {% if alert.notified_email %}bg-glow-green{% else %}bg-secondary{% endif %}" title="SMTP Email Alert Sent"><i class="bi bi-envelope"></i> Email</span>
+                                        <span class="badge {% if alert.notified_telegram %}bg-glow-green{% else %}bg-secondary{% endif %}" title="Telegram Bot Alert Sent"><i class="bi bi-send"></i> Telegram</span>
+                                    </div>
+                                </td>
+                                <td class="small text-secondary">{{ alert.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                            </tr>
+                            {% endfor %}
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Config / Sandbox details Card -->
+    <div class="col-xl-4">
+        <div class="glass-panel p-4 mb-4">
+            <h4 class="fw-bold mb-4 text-white"><i class="bi bi-sliders text-info me-2"></i>Alert Settings</h4>
+            
+            <div class="p-3 bg-dark rounded border border-secondary border-opacity-25 mb-3">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="fw-bold text-white small">Alert Sandbox Mode</span>
+                    <span class="badge bg-success font-monospace">ACTIVE</span>
+                </div>
+                <p class="text-secondary small mb-0" style="font-size: 0.8rem;">
+                    Sandbox mode is currently enabled in `config.py`. All SMTP and Telegram bot outputs will be piped into system logs rather than attempting live connections.
+                </p>
+            </div>
+            
+            <div class="p-3 bg-dark rounded border border-secondary border-opacity-25">
+                <h6 class="fw-bold text-white small mb-2"><i class="bi bi-info-circle text-info"></i> Production Configuration</h6>
+                <p class="text-secondary small mb-0" style="font-size: 0.8rem;">
+                    To deploy to live notifications:
+                    <ol class="ps-3 mt-2 mb-0 text-secondary" style="font-size: 0.75rem;">
+                        <li>Edit `config.py` and set `ALERT_SANDBOX = False`.</li>
+                        <li>Update SMTP/Telegram credentials in env variables or `config.py`.</li>
+                    </ol>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Audit Logs Section (Admin only) -->
+{% if current_role == 'admin' %}
+<div class="row">
+    <div class="col-12">
+        <div class="glass-panel p-4">
+            <h4 class="fw-bold mb-4 text-white"><i class="bi bi-terminal text-warning me-2"></i>System Operational Audit Logs</h4>
+            
+            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                <table class="table table-custom align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th style="width: 15%">Category</th>
+                            <th style="width: 10%">Level</th>
+                            <th style="width: 60%">Message</th>
+                            <th style="width: 15%">Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if not system_logs %}
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-secondary">No system logs recorded.</td>
+                            </tr>
+                        {% else %}
+                            {% for log in system_logs %}
+                            <tr>
+                                <td class="font-monospace text-info">{{ log.category }}</td>
+                                <td>
+                                    {% if log.level == 'ERROR' %}
+                                        <span class="badge bg-danger">ERROR</span>
+                                    {% elif log.level == 'WARNING' %}
+                                        <span class="badge bg-warning text-dark">WARNING</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">INFO</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-white small font-monospace break-word">{{ log.message }}</td>
+                                <td class="small text-secondary">{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S UTC') }}</td>
+                            </tr>
+                            {% endfor %}
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
